@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument("--momentum",help='momentum',default=0.9, type=float)
     parser.add_argument("--num_workers", help="workers number", default=16, type=int)
     parser.add_argument("--exp", help='experiment name', default='debugging', type=str)
-    parser.add_argument("--device", help="cuda or cpu", default='mps', type=str)
+    parser.add_argument("--device", help="cuda or cpu", default='cuda', type=str)
     parser.add_argument("--num_steps", help="# of iterations", default= 500 * 100, type=int)
     parser.add_argument("--target_attr_idx", help="target_attr_idx", default= 0, type=int)
     parser.add_argument("--bias_attr_idx", help="bias_attr_idx", default= 1, type=int)
