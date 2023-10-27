@@ -3,6 +3,12 @@ import torch
 import random
 from learner import Learner
 import argparse
+from Update import LocalUpdate
+from module.fedAvg import FedAvg
+import copy
+from module.util import get_model
+
+from train_FedAvg_main import fed_avg_main
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Learning Debiased Representation via Disentangled Feature Augmentation (NeurIPS 21 Oral)')
@@ -36,7 +42,7 @@ if __name__ == '__main__':
 
     # logging
     parser.add_argument("--log_dir", help='path for saving model', default='./log', type=str)
-    parser.add_argument("--data_dir", help='path for loading data', default='dataset', type=str)
+    parser.add_argument("--data_dir", help='path for loading data', default='./dataset', type=str)
     parser.add_argument("--valid_freq", help='frequency to evaluate on valid/test set', default=500, type=int)
     parser.add_argument("--log_freq", help='frequency to log on tensorboard', default=500, type=int)
     parser.add_argument("--save_freq", help='frequency to save model checkpoint', default=1000, type=int)
@@ -47,20 +53,36 @@ if __name__ == '__main__':
     parser.add_argument("--train_ours", action="store_true", help="whether to train our method")
     parser.add_argument("--train_vanilla", action="store_true", help="whether to train vanilla")
 
+
+    # add on for Federative Learning
+    parser.add_argument("--FedAvg", action="store_true", help="whether to use FedAvg")
+    parser.add_argument("--FedWt", action="store_true", help="Whether to use FedWt")
+    parser.add_argument("--local_num_steps", help="number of local steps for each communication", default=5)
+    parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=[0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 2, 5])
+
     args = parser.parse_args()
 
-    # init learner
-    learner = Learner(args)
+    
 
     # actual training
     print('Official Pytorch Code of "Learning Debiased Representation via Disentangled Feature Augmentation (NeurIPS 21 Oral)"')
     print('Training starts ...')
 
-    if args.train_ours:
-        learner.train_ours(args)
-    elif args.train_vanilla:
-        learner.train_vanilla(args)
+    # FedAvg over clients
+    if args.FedAvg:
+        fedavg_vanilla = fed_avg_main(args)
+        fedavg_vanilla.train()
+
+
     else:
-        print('choose one of the two options ...')
-        import sys
-        sys.exit(0)
+        # init learner
+        learner = Learner(args)
+
+        if args.train_ours:
+            learner.train_ours(args)
+        elif args.train_vanilla:
+            learner.train_vanilla(args)
+        else:
+            print('choose one of the two options ...')
+            import sys
+            sys.exit(0)

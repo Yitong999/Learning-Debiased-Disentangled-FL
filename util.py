@@ -7,7 +7,7 @@ import torch.nn as nn
 
 class EMA:
     def __init__(self, label, num_classes=None, alpha=0.9):
-        self.device = torch.device('cuda')
+        self.device = torch.device('mps')
         self.label = label.to(self.device)
         self.alpha = alpha
         self.parameter = torch.zeros(label.size(0))

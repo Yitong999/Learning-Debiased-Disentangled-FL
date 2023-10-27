@@ -14,8 +14,11 @@ from module.util import get_model
 from util import EMA
 
 
-class Learner(object):
-    def __init__(self, args):
+class LocalUpdate(object):
+    def __init__(self, args, client, iter):
+        self.client = client
+        self.iter = iter
+
         data2model = {'cmnist': "MLP",
                        'cifar10c': "ResNet18",
                        'bffhq': "ResNet18"}
@@ -43,7 +46,7 @@ class Learner(object):
         self.batch_size = data2batch_size[args.dataset]
 
         print(f'model: {self.model} || dataset: {args.dataset}')
-        print(f'working with experiment: {args.exp}...')
+        print(f'working with experiment: {args.exp}...') #TODO: change args.exp => ratio for each client 
         self.log_dir = os.makedirs(os.path.join(args.log_dir, args.dataset, args.exp), exist_ok=True)
         self.device = torch.device(args.device)
         self.args = args
@@ -63,7 +66,7 @@ class Learner(object):
             data_dir=args.data_dir,
             dataset_split="train",
             transform_split="train",
-            percent=args.percent,
+            percent=args.clients_ratio_list[client],
             use_preprocess=data2preprocess[args.dataset],
             use_type0=args.use_type0,
             use_type1=args.use_type1
@@ -73,7 +76,7 @@ class Learner(object):
             data_dir=args.data_dir,
             dataset_split="valid",
             transform_split="valid",
-            percent=args.percent,
+            percent=args.clients_ratio_list[client],
             use_preprocess=data2preprocess[args.dataset],
             use_type0=args.use_type0,
             use_type1=args.use_type1
@@ -274,7 +277,7 @@ class Learner(object):
             }, step=step,)
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"loss/loss_b_train", loss_b, step)
+            self.writer.add_scalar(f"loss/loss_b_train_{self.client}", loss_b, self.iter * self.args.local_num_steps + step)
 
     def board_ours_loss(self, step, loss_dis_conflict, loss_dis_align, loss_swap_conflict, loss_swap_align, lambda_swap):
 
@@ -304,7 +307,6 @@ class Learner(object):
             self.best_valid_acc_b = valid_accs_b
         if test_accs_b >= self.best_test_acc_b:
             self.best_test_acc_b = test_accs_b
-            self.save_vanilla(step, best=True)
 
         if self.args.wandb:
             wandb.log({
@@ -321,11 +323,11 @@ class Learner(object):
         print(f'valid_b: {valid_accs_b} || test_b: {test_accs_b}')
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"acc/acc_b_valid", valid_accs_b, step)
-            self.writer.add_scalar(f"acc/acc_b_test", test_accs_b, step)
+            self.writer.add_scalar(f"acc/acc_b_valid", valid_accs_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/acc_b_test", test_accs_b, self.iter * self.args.local_num_steps + step)
 
-            self.writer.add_scalar(f"acc/best_acc_b_valid", self.best_valid_acc_b, step)
-            self.writer.add_scalar(f"acc/best_acc_b_test", self.best_test_acc_b, step)
+            self.writer.add_scalar(f"acc/best_acc_b_valid", self.best_valid_acc_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/best_acc_b_test", self.best_test_acc_b, self.iter * self.args.local_num_steps + step)
 
 
     def board_ours_acc(self, step, inference=None):
@@ -341,7 +343,7 @@ class Learner(object):
             self.best_valid_acc_d = valid_accs_d
         if test_accs_d >= self.best_test_acc_d:
             self.best_test_acc_d = test_accs_d
-            self.save_ours(step, best=True)
+
 
         if self.args.wandb:
             wandb.log({
@@ -375,7 +377,7 @@ class Learner(object):
         train_num = len(self.train_dataset.dataset)
         epoch, cnt = 0, 0
 
-        for step in tqdm(range(args.num_steps)):
+        for step in tqdm(range(args.num_local_steps)):
             try:
                 index, data, attr, _ = next(train_iter)
             except:
@@ -398,9 +400,6 @@ class Learner(object):
             #################### LOGGING #####################
             ##################################################
 
-            if step % args.save_freq == 0:
-                self.save_vanilla(step)
-
             if step % args.log_freq == 0:
                 self.board_vanilla_loss(step, loss_b=loss)
 
@@ -412,6 +411,8 @@ class Learner(object):
                 print(f'finished epoch: {epoch}')
                 epoch += 1
                 cnt = 0
+        
+        return self.model_b.state_dict()
 
     def train_ours(self, args):
         epoch, cnt = 0, 0
@@ -582,9 +583,6 @@ class Learner(object):
                 print('******* learning rate decay .... ********')
                 print(f"self.optimizer_b lr: { self.optimizer_b.param_groups[-1]['lr']}")
                 print(f"self.optimizer_l lr: { self.optimizer_l.param_groups[-1]['lr']}")
-
-            if step % args.save_freq == 0:
-                self.save_ours(step)
 
             if step % args.log_freq == 0:
                 bias_label = attr[:, 1]
