@@ -13,9 +13,10 @@ from module.loss import GeneralizedCELoss
 from module.util import get_model
 from util import EMA
 
+# TODO: update model_b and model_l from global model
 
 class LocalUpdate(object):
-    def __init__(self, args, client, iter, writer):
+    def __init__(self, args, client, iter, writer, model_b, model_l):
         self.client = client
         self.iter = iter
 
@@ -130,20 +131,30 @@ class LocalUpdate(object):
         )
 
         # define model and optimizer
-        self.model_b = get_model(self.model, attr_dims[0]).to(self.device)
-        self.model_d = get_model(self.model, attr_dims[0]).to(self.device)
+        # self.model_b = get_model(self.model, attr_dims[0]).to(self.device)
+        # self.model_d = get_model(self.model, attr_dims[0]).to(self.device)
+        if self.args.train_vanilla:
+            self.model_b = model_b
 
-        self.optimizer_b = torch.optim.Adam(
-                self.model_b.parameters(),
-                lr=args.lr,
-                weight_decay=args.weight_decay,
-            )
+            self.optimizer_b = torch.optim.Adam(
+                    self.model_b.parameters(),
+                    lr=args.lr,
+                    weight_decay=args.weight_decay,
+                )
+        
+        elif self.args.train_ours:
+            self.model_l = model_l
+            self.model_b = model_b
+        else:
+            print('choose one of the two options ...')
+            import sys
+            sys.exit(0)
 
-        self.optimizer_d = torch.optim.Adam(
-                self.model_d.parameters(),
-                lr=args.lr,
-                weight_decay=args.weight_decay,
-            )
+        # self.optimizer_d = torch.optim.Adam(
+        #         self.model_d.parameters(),
+        #         lr=args.lr,
+        #         weight_decay=args.weight_decay,
+        #     )
 
         # define loss
         self.criterion = nn.CrossEntropyLoss(reduction='none')
@@ -419,26 +430,29 @@ class LocalUpdate(object):
         # self.model_b   : model for predicting bias attributes ((E_b, C_b) in the main paper)
         # self.model_b.fc: fc layer for predicting bias attributes (C_b in the main paper)
 
-        if args.dataset == 'cmnist':
-            self.model_l = get_model('mlp_DISENTANGLE', self.num_classes).to(self.device)
-            self.model_b = get_model('mlp_DISENTANGLE', self.num_classes).to(self.device)
-        else:
-            if self.args.use_resnet20: # Use this option only for comparing with LfF
-                self.model_l = get_model('ResNet20_OURS', self.num_classes).to(self.device)
-                self.model_b = get_model('ResNet20_OURS', self.num_classes).to(self.device)
-                print('our resnet20....')
-            else:
-                self.model_l = get_model('resnet_DISENTANGLE', self.num_classes).to(self.device)
-                self.model_b = get_model('resnet_DISENTANGLE', self.num_classes).to(self.device)
+        # if args.dataset == 'cmnist':
+        #     self.model_l = get_model('mlp_DISENTANGLE', self.num_classes).to(self.device)
+        #     self.model_b = get_model('mlp_DISENTANGLE', self.num_classes).to(self.device)
+        # else:
+        #     if self.args.use_resnet20: # Use this option only for comparing with LfF
+        #         self.model_l = get_model('ResNet20_OURS', self.num_classes).to(self.device)
+        #         self.model_b = get_model('ResNet20_OURS', self.num_classes).to(self.device)
+        #         print('our resnet20....')
+        #     else:
+        #         self.model_l = get_model('resnet_DISENTANGLE', self.num_classes).to(self.device)
+        #         self.model_b = get_model('resnet_DISENTANGLE', self.num_classes).to(self.device)
+
+        model_l = self.model_l
+        model_b = self.model_b
 
         self.optimizer_l = torch.optim.Adam(
-            self.model_l.parameters(),
+            model_l.parameters(),
             lr=args.lr,
             weight_decay=args.weight_decay,
         )
 
         self.optimizer_b = torch.optim.Adam(
-            self.model_b.parameters(),
+            model_b.parameters(),
             lr=args.lr,
             weight_decay=args.weight_decay,
         )
@@ -449,8 +463,6 @@ class LocalUpdate(object):
 
         self.bias_criterion = GeneralizedCELoss(q=0.7)
 
-        print(f'criterion: {self.criterion}')
-        print(f'bias criterion: {self.bias_criterion}')
         train_iter = iter(self.train_loader)
 
         for step in tqdm(range(args.local_num_steps)):
@@ -599,6 +611,8 @@ class LocalUpdate(object):
                 print(f'finished epoch: {epoch}')
                 epoch += 1
                 cnt = 0
+
+        return model_l.state_dict(), model_b.state_dict()
 
     def test_ours(self, args):
         if args.dataset == 'cmnist':
