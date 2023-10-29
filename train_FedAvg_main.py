@@ -33,4 +33,5 @@ class fed_avg_main(object):
                 w_locals.append(copy.deepcopy(w))
 
             w_global = FedAvg(w_locals)
+            print(f'finishing aggregation on epoch {iter}')
             model_global.load_state_dict(w_global)

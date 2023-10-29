@@ -87,7 +87,7 @@ class LocalUpdate(object):
             data_dir=args.data_dir,
             dataset_split="test",
             transform_split="valid",
-            percent=args.percent,
+            percent=args.clients_ratio_list[client],
             use_preprocess=data2preprocess[args.dataset],
             use_type0=args.use_type0,
             use_type1=args.use_type1
@@ -161,7 +161,7 @@ class LocalUpdate(object):
 
         self.best_valid_acc_b, self.best_test_acc_b = 0., 0.
         self.best_valid_acc_d, self.best_test_acc_d = 0., 0.
-        print('finished model initialization....')
+        print(f'finished model initialization on client{client}....')
 
 
     # evaluation code for vanilla
@@ -377,7 +377,7 @@ class LocalUpdate(object):
         train_num = len(self.train_dataset.dataset)
         epoch, cnt = 0, 0
 
-        for step in tqdm(range(args.num_local_steps)):
+        for step in tqdm(range(args.local_num_steps)):
             try:
                 index, data, attr, _ = next(train_iter)
             except:

@@ -58,7 +58,7 @@ if __name__ == '__main__':
     parser.add_argument("--FedAvg", action="store_true", help="whether to use FedAvg")
     parser.add_argument("--FedWt", action="store_true", help="Whether to use FedWt")
     parser.add_argument("--local_num_steps", help="number of local steps for each communication", default=5)
-    parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=[0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1, 2, 5])
+    parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct', '0.5pct', '0.5pct', '1pct', '1pct', '1pct', '1pct', '2pct', '5pct'])
 
     args = parser.parse_args()
 
