@@ -453,7 +453,7 @@ class LocalUpdate(object):
         print(f'bias criterion: {self.bias_criterion}')
         train_iter = iter(self.train_loader)
 
-        for step in tqdm(range(args.num_steps)):
+        for step in tqdm(range(args.local_num_steps)):
 
             try:
                 index, data, attr, image_path = next(train_iter)
