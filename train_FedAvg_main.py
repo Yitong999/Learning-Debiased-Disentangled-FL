@@ -28,10 +28,17 @@ class fed_avg_main(object):
             from torch.utils.tensorboard import SummaryWriter
             self.writer = SummaryWriter(f'result/summary/{run_name}')
 
+        
+        data2batch_size = {'cmnist': 256,
+                           'cifar10c': 256,
+                           'bffhq': 64}
         data2preprocess = {'cmnist': None,
                            'cifar10c': True,
                            'bffhq': True}
         
+        self.device = torch.device(args.device)
+        self.batch_size = data2batch_size[args.dataset]
+
         self.test_dataset = get_dataset(
             args.dataset,
             data_dir=args.data_dir,
@@ -41,6 +48,14 @@ class fed_avg_main(object):
             use_preprocess=data2preprocess[args.dataset],
             use_type0=args.use_type0,
             use_type1=args.use_type1
+        )
+
+        self.test_loader = DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+            pin_memory=True,
         )
 
     def train(self):
@@ -76,7 +91,8 @@ class fed_avg_main(object):
         for iter in range(self.args.num_steps):
             w_l_locals = []
             w_b_locals = []
-            for idx in range(10):
+
+            for idx in range(len(self.args.clients_ratio_list)):
                 local = LocalUpdate(self.args, idx, iter, self.writer, copy.deepcopy(model_b_global), copy.deepcopy(model_l_global))
 
                 if self.args.train_ours:
@@ -104,8 +120,9 @@ class fed_avg_main(object):
             model_l_global.load_state_dict(w_l_global)
 
             # evaluate the model
-            auc = self.evaluate_ours(self, model_b_global, model_l_global, self.test_dataset, model='label')
-            self.writer.add_scalar('test_auc_global', auc, step=iter)
+            auc = self.evaluate_ours(model_b_global, model_l_global, self.test_loader)
+            self.writer.add_scalar('test_auc_global', auc, iter)
+            print(f'auc = {auc} in iter {iter}')
             
 
     def evaluate_ours(self ,model_b, model_l, data_loader, model='label'):
@@ -147,6 +164,7 @@ class fed_avg_main(object):
         accs = total_correct/float(total_num)
         model_b.train()
         model_l.train()
+
 
         return accs
 
