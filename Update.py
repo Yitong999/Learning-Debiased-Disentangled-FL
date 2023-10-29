@@ -283,7 +283,8 @@ class LocalUpdate(object):
             }, step=self.iter * self.args.local_num_steps + step)
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"loss/loss_b_train_{self.client}", loss_b, self.iter * self.args.local_num_steps + step)
+            if self.client == 0:
+                self.writer.add_scalar(f"loss/loss_b_train_{self.client}", loss_b, self.iter * self.args.local_num_steps + step)
 
     def board_ours_loss(self, step, loss_dis_conflict, loss_dis_align, loss_swap_conflict, loss_swap_align, lambda_swap):
 
@@ -297,11 +298,12 @@ class LocalUpdate(object):
             }, step=self.iter * self.args.local_num_steps + step,)
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"loss/loss_dis_conflict_{self.client}",  loss_dis_conflict, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"loss/loss_dis_align_{self.client}",     loss_dis_align, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"loss/loss_swap_conflict_{self.client}", loss_swap_conflict, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"loss/loss_swap_align_{self.client}",    loss_swap_align, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"loss/loss_{self.client}",               (loss_dis_conflict + loss_dis_align) + lambda_swap * (loss_swap_conflict + loss_swap_align), self.iter * self.args.local_num_steps + step)
+            if self.client == 0:
+                self.writer.add_scalar(f"loss/loss_dis_conflict_{self.client}",  loss_dis_conflict, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"loss/loss_dis_align_{self.client}",     loss_dis_align, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"loss/loss_swap_conflict_{self.client}", loss_swap_conflict, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"loss/loss_swap_align_{self.client}",    loss_swap_align, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"loss/loss_{self.client}",               (loss_dis_conflict + loss_dis_align) + lambda_swap * (loss_swap_conflict + loss_swap_align), self.iter * self.args.local_num_steps + step)
 
     def board_vanilla_acc(self, step, epoch, inference=None):
         valid_accs_b = self.evaluate(self.model_b, self.valid_loader)
@@ -329,11 +331,12 @@ class LocalUpdate(object):
         print(f'valid_b_{self.client}: {valid_accs_b} || test_b: {test_accs_b}')
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"acc/acc_b_valid_{self.client}", valid_accs_b, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/acc_b_test_{self.client}", test_accs_b, self.iter * self.args.local_num_steps + step)
+            if self.client == 0:
+                self.writer.add_scalar(f"acc/acc_b_valid_{self.client}", valid_accs_b, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/acc_b_test_{self.client}", test_accs_b, self.iter * self.args.local_num_steps + step)
 
-            self.writer.add_scalar(f"acc/best_acc_b_valid_{self.client}", self.best_valid_acc_b, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/best_acc_b_test_{self.client}", self.best_test_acc_b, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/best_acc_b_valid_{self.client}", self.best_valid_acc_b, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/best_acc_b_test_{self.client}", self.best_test_acc_b, self.iter * self.args.local_num_steps + step)
 
 
     def board_ours_acc(self, step, inference=None):
@@ -364,10 +367,11 @@ class LocalUpdate(object):
                 step=step, )
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"acc/acc_d_valid_{self.client}", valid_accs_d, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/acc_d_test_{self.client}", test_accs_d, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/best_acc_d_valid_{self.client}", self.best_valid_acc_d, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/best_acc_d_test_{self.client}", self.best_test_acc_d, self.iter * self.args.local_num_steps + step)
+            if self.client == 0:
+                self.writer.add_scalar(f"acc/acc_d_valid_{self.client}", valid_accs_d, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/acc_d_test_{self.client}", test_accs_d, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/best_acc_d_valid_{self.client}", self.best_valid_acc_d, self.iter * self.args.local_num_steps + step)
+                self.writer.add_scalar(f"acc/best_acc_d_test_{self.client}", self.best_test_acc_d, self.iter * self.args.local_num_steps + step)
 
         print(f'valid_d: {valid_accs_d} || test_d: {test_accs_d} ')
 
