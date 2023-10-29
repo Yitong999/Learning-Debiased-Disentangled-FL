@@ -22,14 +22,28 @@ class fed_avg_main(object):
     def __init__(self, args):
         self.args = args
 
+        run_name = self.args.exp
+        if args.tensorboard:
+            from torch.utils.tensorboard import SummaryWriter
+            self.writer = SummaryWriter(f'result/summary/{run_name}')
+
     def train(self):
         model_global = get_model(self.args.model, 10).to(self.args.device)
 
         for iter in range(self.args.num_steps):
             w_locals = []
             for idx in range(10):
-                local = LocalUpdate(self.args, idx, iter)
-                w = local.train_vanilla(self.args)
+                local = LocalUpdate(self.args, idx, iter, self.writer)
+
+                if self.args.train_ours:
+                    w = local.train_ours(self.args)
+                elif self.args.train_vanilla:
+                    w = local.train_vanilla(self.args)
+                else:
+                    print('choose one of the two options ...')
+                    import sys
+                    sys.exit(0)
+
                 w_locals.append(copy.deepcopy(w))
 
             w_global = FedAvg(w_locals)

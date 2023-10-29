@@ -15,7 +15,7 @@ from util import EMA
 
 
 class LocalUpdate(object):
-    def __init__(self, args, client, iter):
+    def __init__(self, args, client, iter, writer):
         self.client = client
         self.iter = iter
 
@@ -37,21 +37,20 @@ class LocalUpdate(object):
             wandb.init(project='Learning-Debiased-Disetangled')
             wandb.run.name = args.exp
 
-        run_name = args.exp
+        
         if args.tensorboard:
-            from torch.utils.tensorboard import SummaryWriter
-            self.writer = SummaryWriter(f'result/summary/{run_name}')
+            self.writer = writer
 
         self.model = data2model[args.dataset]
         self.batch_size = data2batch_size[args.dataset]
 
-        print(f'model: {self.model} || dataset: {args.dataset}')
-        print(f'working with experiment: {args.exp}...') #TODO: change args.exp => ratio for each client 
+        # print(f'model: {self.model} || dataset: {args.dataset}')
+        print(f'working with experiment: {args.exp } on client #{client}...') #TODO: change args.exp => ratio for each client 
         self.log_dir = os.makedirs(os.path.join(args.log_dir, args.dataset, args.exp), exist_ok=True)
         self.device = torch.device(args.device)
         self.args = args
 
-        print(self.args)
+        # print(self.args)
 
         # logging directories
         self.log_dir = os.path.join(args.log_dir, args.dataset, args.exp)
@@ -100,7 +99,6 @@ class LocalUpdate(object):
 
         attr_dims = []
 
-        print('train_target_attr: ', train_target_attr)
         attr_dims.append(torch.max(train_target_attr).item() + 1)
         self.num_classes = attr_dims[0]
         self.train_dataset = IdxDataset(self.train_dataset)
@@ -151,13 +149,10 @@ class LocalUpdate(object):
         self.criterion = nn.CrossEntropyLoss(reduction='none')
         self.bias_criterion = nn.CrossEntropyLoss(reduction='none')
 
-        print(f'self.criterion: {self.criterion}')
-        print(f'self.bias_criterion: {self.bias_criterion}')
-
         self.sample_loss_ema_b = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
         self.sample_loss_ema_d = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
 
-        print(f'alpha : {self.sample_loss_ema_d.alpha}')
+        # print(f'alpha : {self.sample_loss_ema_d.alpha}')
 
         self.best_valid_acc_b, self.best_test_acc_b = 0., 0.
         self.best_valid_acc_d, self.best_test_acc_d = 0., 0.
@@ -274,7 +269,7 @@ class LocalUpdate(object):
         if self.args.wandb:
             wandb.log({
                 "loss_b_train": loss_b,
-            }, step=step,)
+            }, step=self.iter * self.args.local_num_steps + step)
 
         if self.args.tensorboard:
             self.writer.add_scalar(f"loss/loss_b_train_{self.client}", loss_b, self.iter * self.args.local_num_steps + step)
@@ -288,14 +283,14 @@ class LocalUpdate(object):
                 "loss_swap_conflict":   loss_swap_conflict,
                 "loss_swap_align":      loss_swap_align,
                 "loss":                 (loss_dis_conflict + loss_dis_align) + lambda_swap * (loss_swap_conflict + loss_swap_align)
-            }, step=step,)
+            }, step=self.iter * self.args.local_num_steps + step,)
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"loss/loss_dis_conflict",  loss_dis_conflict, step)
-            self.writer.add_scalar(f"loss/loss_dis_align",     loss_dis_align, step)
-            self.writer.add_scalar(f"loss/loss_swap_conflict", loss_swap_conflict, step)
-            self.writer.add_scalar(f"loss/loss_swap_align",    loss_swap_align, step)
-            self.writer.add_scalar(f"loss/loss",               (loss_dis_conflict + loss_dis_align) + lambda_swap * (loss_swap_conflict + loss_swap_align), step)
+            self.writer.add_scalar(f"loss/loss_dis_conflict_{self.client}",  loss_dis_conflict, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"loss/loss_dis_align_{self.client}",     loss_dis_align, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"loss/loss_swap_conflict_{self.client}", loss_swap_conflict, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"loss/loss_swap_align_{self.client}",    loss_swap_align, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"loss/loss_{self.client}",               (loss_dis_conflict + loss_dis_align) + lambda_swap * (loss_swap_conflict + loss_swap_align), self.iter * self.args.local_num_steps + step)
 
     def board_vanilla_acc(self, step, epoch, inference=None):
         valid_accs_b = self.evaluate(self.model_b, self.valid_loader)
@@ -310,24 +305,24 @@ class LocalUpdate(object):
 
         if self.args.wandb:
             wandb.log({
-                "acc_b_valid": valid_accs_b,
-                "acc_b_test": test_accs_b,
+                "acc_b_valid_{self.client}": valid_accs_b,
+                "acc_b_test_{self.client}": test_accs_b,
             },
-                step=step,)
+                step=self.iter * self.args.local_num_steps + step,)
             wandb.log({
-                "best_acc_b_valid": self.best_valid_acc_b,
-                "best_acc_b_test": self.best_test_acc_b,
+                "best_acc_b_valid_{self.client}": self.best_valid_acc_b,
+                "best_acc_b_test_{self.client}": self.best_test_acc_b,
             },
-                step=step, )
+                step=self.iter * self.args.local_num_steps + step, )
 
-        print(f'valid_b: {valid_accs_b} || test_b: {test_accs_b}')
+        print(f'valid_b_{self.client}: {valid_accs_b} || test_b: {test_accs_b}')
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"acc/acc_b_valid", valid_accs_b, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/acc_b_test", test_accs_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/acc_b_valid_{self.client}", valid_accs_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/acc_b_test_{self.client}", test_accs_b, self.iter * self.args.local_num_steps + step)
 
-            self.writer.add_scalar(f"acc/best_acc_b_valid", self.best_valid_acc_b, self.iter * self.args.local_num_steps + step)
-            self.writer.add_scalar(f"acc/best_acc_b_test", self.best_test_acc_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/best_acc_b_valid_{self.client}", self.best_valid_acc_b, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/best_acc_b_test_{self.client}", self.best_test_acc_b, self.iter * self.args.local_num_steps + step)
 
 
     def board_ours_acc(self, step, inference=None):
@@ -358,10 +353,10 @@ class LocalUpdate(object):
                 step=step, )
 
         if self.args.tensorboard:
-            self.writer.add_scalar(f"acc/acc_d_valid", valid_accs_d, step)
-            self.writer.add_scalar(f"acc/acc_d_test", test_accs_d, step)
-            self.writer.add_scalar(f"acc/best_acc_d_valid", self.best_valid_acc_d, step)
-            self.writer.add_scalar(f"acc/best_acc_d_test", self.best_test_acc_d, step)
+            self.writer.add_scalar(f"acc/acc_d_valid_{self.client}", valid_accs_d, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/acc_d_test_{self.client}", test_accs_d, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/best_acc_d_valid_{self.client}", self.best_valid_acc_d, self.iter * self.args.local_num_steps + step)
+            self.writer.add_scalar(f"acc/best_acc_d_test_{self.client}", self.best_test_acc_d, self.iter * self.args.local_num_steps + step)
 
         print(f'valid_d: {valid_accs_d} || test_d: {test_accs_d} ')
 
