@@ -466,7 +466,7 @@ class LocalUpdate(object):
         #     self.scheduler_b = optim.lr_scheduler.StepLR(self.optimizer_b, step_size=args.lr_decay_step, gamma=args.lr_gamma)
         #     self.scheduler_l = optim.lr_scheduler.StepLR(self.optimizer_l, step_size=args.lr_decay_step, gamma=args.lr_gamma)
 
-        self.bias_criterion = GeneralizedCELoss(q=0.7)
+        self.bias_criterion = GeneralizedCELoss(q = self.args.q)
 
         train_iter = iter(self.train_loader)
 
@@ -552,6 +552,7 @@ class LocalUpdate(object):
             loss_dis_align = self.bias_criterion(pred_align, label)                                             # Eq.2 GCE(C_b(z),y)
 
             # feature-level augmentation : augmentation after certain iteration (after representation is disentangled at a certain level)
+            # TODO: set step based on global epochs
             if step > args.curr_step:
                 indices = np.random.permutation(z_b.size(0))
                 z_b_swap = z_b[indices]         # z tilde
