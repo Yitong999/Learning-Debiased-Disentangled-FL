@@ -87,19 +87,29 @@ class fed_avg_main(object):
             import sys
             sys.exit(0)
         
-
+        model_b_dict = {}
         for iter in range(self.args.num_steps):
-            w_l_locals = []
+            if self.args.train_ours:
+                w_l_locals = []
             w_b_locals = []
 
             for idx in range(len(self.args.clients_ratio_list)):
-                local = LocalUpdate(self.args, idx, iter, self.writer, copy.deepcopy(model_b_global), copy.deepcopy(model_l_global))
+                try:
+                    model_b_global = model_b_dict[idx]
+                    # print('### old model_b is loaded###')
+                except:
+                    model_b_dict[idx] = copy.deepcopy(model_b_global)
+                    # model_b_arr[idx] = copy.deepcopy(model_biased)
+                    model_b_global = model_b_dict[idx]
+            
+                local = LocalUpdate(self.args, idx, iter, self.writer, model_b_global, copy.deepcopy(model_l_global))
 
                 if self.args.train_ours:
                     w_l, w_b = local.train_ours(self.args)
 
                     w_l_locals.append(copy.deepcopy(w_l))
-                    w_b_locals.append(copy.deepcopy(w_b))
+                    # TODO: avoid FedAvg global model
+                    
                 elif self.args.train_vanilla:
                     w_b = local.train_vanilla(self.args)
 
@@ -109,22 +119,50 @@ class fed_avg_main(object):
                     import sys
                     sys.exit(0)
 
-                
+                model_b_dict[idx].load_state_dict(w_b)
 
-            w_l_global = FedAvg(w_l_locals)
-            w_b_global = FedAvg(w_b_locals)
+
+            # TODO: implement vanilla
+            if self.args.train_ours:
+                w_l_global = FedAvg(w_l_locals)
+
 
             print(f'finishing aggregation on epoch {iter}')
 
-            model_b_global.load_state_dict(w_b_global)
-            model_l_global.load_state_dict(w_l_global)
+            
 
             # evaluate the model
-            auc = self.evaluate_ours(model_b_global, model_l_global, self.test_loader)
+            if self.args.train_ours:
+                model_l_global.load_state_dict(w_l_global)
+                auc = self.evaluate_ours(model_b_global, model_l_global, self.test_loader)
+            elif self.args.train_vanilla:
+                model_b_global.load_state_dict(w_b_global)
+                auc = self.evaluate(model_b_global, self.test_loader)
+            
             self.writer.add_scalar('test_auc_global', auc, iter)
             print(f'auc = {auc} in iter {iter}')
             
 
+    def evaluate(self, model, data_loader):
+        model.eval()
+        total_correct, total_num = 0, 0
+        for data, attr, index in tqdm(data_loader, leave=False):
+            label = attr[:, 0]
+            data = data.to(self.device)
+            label = label.to(self.device)
+
+            with torch.no_grad():
+                logit = model(data)
+                pred = logit.data.max(1, keepdim=True)[1].squeeze(1)
+                correct = (pred == label).long()
+                total_correct += correct.sum()
+                total_num += correct.shape[0]
+
+        accs = total_correct/float(total_num)
+        model.train()
+
+        return accs
+    
     def evaluate_ours(self ,model_b, model_l, data_loader, model='label'):
         model_b.eval()
         model_l.eval()

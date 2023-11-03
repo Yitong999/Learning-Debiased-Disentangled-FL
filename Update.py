@@ -19,7 +19,7 @@ class LocalUpdate(object):
     def __init__(self, args, client, iter, writer, model_b, model_l):
         self.client = client
         self.iter = iter
-
+        
         data2model = {'cmnist': "MLP",
                        'cifar10c': "ResNet18",
                        'bffhq': "ResNet18"}
@@ -46,7 +46,7 @@ class LocalUpdate(object):
         self.batch_size = data2batch_size[args.dataset]
 
         # print(f'model: {self.model} || dataset: {args.dataset}')
-        print(f'working with experiment: {args.exp } on client #{client}...') #TODO: change args.exp => ratio for each client 
+        print(f'working with experiment: {args.exp } on client #{client}...')
         self.log_dir = os.makedirs(os.path.join(args.log_dir, args.dataset, args.exp), exist_ok=True)
         self.device = torch.device(args.device)
         self.args = args
@@ -449,6 +449,7 @@ class LocalUpdate(object):
         model_l = self.model_l
         model_b = self.model_b
 
+        
         self.optimizer_l = torch.optim.Adam(
             model_l.parameters(),
             lr=args.lr,
@@ -460,10 +461,10 @@ class LocalUpdate(object):
             lr=args.lr,
             weight_decay=args.weight_decay,
         )
-
-        if args.use_lr_decay:
-            self.scheduler_b = optim.lr_scheduler.StepLR(self.optimizer_b, step_size=args.lr_decay_step, gamma=args.lr_gamma)
-            self.scheduler_l = optim.lr_scheduler.StepLR(self.optimizer_l, step_size=args.lr_decay_step, gamma=args.lr_gamma)
+        #TODO: set schedule
+        # if args.use_lr_decay:
+        #     self.scheduler_b = optim.lr_scheduler.StepLR(self.optimizer_b, step_size=args.lr_decay_step, gamma=args.lr_gamma)
+        #     self.scheduler_l = optim.lr_scheduler.StepLR(self.optimizer_l, step_size=args.lr_decay_step, gamma=args.lr_gamma)
 
         self.bias_criterion = GeneralizedCELoss(q=0.7)
 
