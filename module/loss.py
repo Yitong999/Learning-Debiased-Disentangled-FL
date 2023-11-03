@@ -13,12 +13,13 @@ class GeneralizedCELoss(nn.Module):
         super(GeneralizedCELoss, self).__init__()
         self.q = q
              
-    def forward(self, logits, targets, w, z):
+    def forward(self, logits, targets, w_b, w_l, z):
         p = F.softmax(logits, dim=1)
         if np.isnan(p.mean().item()):
             print('logits: ', logits)
             print('target', targets)
-            print('w: ', w)
+            print('w_b: ', w_b)
+            print('w_l: ', w_l)
             print('z: ', z)
             raise NameError('GCE_p')
         
