@@ -141,6 +141,7 @@ class fed_avg_main(object):
             
             self.writer.add_scalar('test_auc_global', auc, iter)
             print(f'auc = {auc} in iter {iter}')
+            print()
             
 
     def evaluate(self, model, data_loader):

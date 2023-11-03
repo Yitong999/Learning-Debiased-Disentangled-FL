@@ -486,7 +486,7 @@ class LocalUpdate(object):
             # Prediction by concatenating zero vectors (dummy vectors).
             # We do not use the prediction here.
             if args.dataset == 'cmnist':
-                z_l = self.model_l.extract(data)
+                z_l = self.model_l.extract(data) # shape: (256, 16)
                 z_b = self.model_b.extract(data)
             else:
                 z_b = []
@@ -549,7 +549,7 @@ class LocalUpdate(object):
 
             loss_weight = loss_dis_align / (loss_dis_align + loss_dis_conflict + 1e-8)                          # Eq.1 (reweighting module) in the main paper
             loss_dis_conflict = self.criterion(pred_conflict, label) * loss_weight.to(self.device)              # Eq.2 W(z)CE(C_i(z),y)
-            loss_dis_align = self.bias_criterion(pred_align, label)                                             # Eq.2 GCE(C_b(z),y)
+            loss_dis_align = self.bias_criterion(pred_align, label, model_b.state_dict(), z_conflict)                                             # Eq.2 GCE(C_b(z),y)
 
             # feature-level augmentation : augmentation after certain iteration (after representation is disentangled at a certain level)
             # TODO: set step based on global epochs
