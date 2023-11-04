@@ -12,7 +12,7 @@ from data.util import get_dataset, IdxDataset
 from module.loss import GeneralizedCELoss
 from module.util import get_model
 from util import EMA
-
+import copy
 # TODO: update model_b and model_l from global model
 
 class LocalUpdate(object):
@@ -144,7 +144,7 @@ class LocalUpdate(object):
         
         elif self.args.train_ours:
             self.model_l = model_l
-            self.cache = model_l
+            self.cache = copy.deepcopy(model_l)
             self.model_b = model_b
         else:
             print('choose one of the two options ...')
