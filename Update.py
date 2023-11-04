@@ -470,13 +470,13 @@ class LocalUpdate(object):
         if args.use_lr_decay:
             self.optimizer_l = torch.optim.Adam(
                 model_l.parameters(),
-                lr=args.lr * args.lr_gamma ** (iter // args.lr_decay_step),
+                lr=args.lr * args.lr_gamma ** (self.iter // args.lr_decay_step),
                 weight_decay=args.weight_decay,
             )
 
             self.optimizer_b = torch.optim.Adam(
                 model_b.parameters(),
-                lr=args.lr * args.lr_gamma ** (iter // args.lr_decay_step),
+                lr=args.lr * args.lr_gamma ** (self.iter // args.lr_decay_step),
                 weight_decay=args.weight_decay,
             )
         else: # don't use lr_decay
@@ -614,7 +614,7 @@ class LocalUpdate(object):
 
             # feature-level augmentation : augmentation after certain iteration (after representation is disentangled at a certain level)
             # TODO: set step based on global epochs
-            if iter > args.curr_step:
+            if self.iter > args.curr_step:
                 indices = np.random.permutation(z_b.size(0))
                 z_b_swap = z_b[indices]         # z tilde
                 label_swap = label[indices]     # y tilde
