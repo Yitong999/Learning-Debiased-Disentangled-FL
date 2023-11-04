@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # logging
     parser.add_argument("--log_dir", help='path for saving model', default='./log', type=str)
     parser.add_argument("--data_dir", help='path for loading data', default='./dataset', type=str)
-    parser.add_argument("--valid_freq", help='frequency to evaluate on valid/test set', default=50, type=int)
+    parser.add_argument("--valid_freq", help='frequency to evaluate on valid/test set', default=5, type=int)
     parser.add_argument("--log_freq", help='frequency to log on tensorboard', default=50, type=int)
     parser.add_argument("--save_freq", help='frequency to save model checkpoint', default=1000, type=int)
     parser.add_argument("--wandb", action="store_true", help="whether to use wandb")
