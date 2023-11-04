@@ -15,6 +15,22 @@ from util import EMA
 import copy
 # TODO: update model_b and model_l from global model
 
+class my_EMA:
+    def __init__(self, num_classes, alpha=0.9):
+        self.alpha = alpha
+        self.num_classes = num_classes
+        self.loss_ema = {i: 0 for i in range(num_classes)}  # 初始化每个类别的EMA损失为0
+        self.max_loss_dict = {i: 0 for i in range(num_classes)}  # 初始化每个类别的最大损失为0
+
+    def update(self, loss, label):
+        # 更新EMA
+        self.loss_ema[label] = self.alpha * self.loss_ema[label] + (1 - self.alpha) * loss
+        # 更新最大损失
+        self.max_loss_dict[label] = max(self.max_loss_dict[label], self.loss_ema[label])
+
+    def get_max_loss(self, label):
+        return self.max_loss_dict.get(label, 0)  # 如果没有记录，返回0
+    
 class LocalUpdate(object):
     def __init__(self, args, client, iter, writer, model_b, model_l):
         self.client = client
@@ -161,8 +177,9 @@ class LocalUpdate(object):
         self.criterion = nn.CrossEntropyLoss(reduction='none')
         self.bias_criterion = nn.CrossEntropyLoss(reduction='none')
 
-        self.sample_loss_ema_b = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
-        self.sample_loss_ema_d = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
+        # change
+        # self.sample_loss_ema_b = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
+        # self.sample_loss_ema_d = EMA(torch.LongTensor(train_target_attr), num_classes=self.num_classes, alpha=args.ema_alpha)
 
         # print(f'alpha : {self.sample_loss_ema_d.alpha}')
 
@@ -531,9 +548,13 @@ class LocalUpdate(object):
             loss_dis_align = self.criterion(pred_align, label).detach()
 
             # EMA sample loss
-            self.sample_loss_ema_d.update(loss_dis_conflict, index)
-            self.sample_loss_ema_b.update(loss_dis_align, index)
+            # self.sample_loss_ema_d.update(loss_dis_conflict, index)
+            # self.sample_loss_ema_b.update(loss_dis_align, index)
+            # change
+            sample_loss_ema_d = my_EMA(num_classes=self.num_classes, alpha=self.args.ema_alpha)
+            sample_loss_ema_b = my_EMA(num_classes=self.num_classes, alpha=self.args.ema_alpha)
 
+            """ change
             # class-wise normalize
             loss_dis_conflict = self.sample_loss_ema_d.parameter[index].clone().detach()
             loss_dis_align = self.sample_loss_ema_b.parameter[index].clone().detach()
@@ -549,6 +570,33 @@ class LocalUpdate(object):
                 loss_dis_align[class_index] /= max_loss_align
 
             loss_weight = loss_dis_align / (loss_dis_align + loss_dis_conflict + 1e-8)                          # Eq.1 (reweighting module) in the main paper
+            """
+            # 第1步: 更新每个类别的EMA和最大损失
+            for c in range(self.num_classes):
+                class_index = torch.where(label == c)[0]
+                if len(class_index) > 0:  # 检查是否有该类别的样本
+                    sample_loss_ema_d.update(loss_dis_conflict[class_index].mean().item(), c)
+                    sample_loss_ema_b.update(loss_dis_align[class_index].mean().item(), c)
+
+            # 第2步: 对每个类别的损失进行归一化
+            normalized_loss_dis_conflict = torch.zeros_like(loss_dis_conflict)
+            normalized_loss_dis_align = torch.zeros_like(loss_dis_align)
+
+            for c in range(self.num_classes):
+                class_index = torch.where(label == c)[0]
+                if len(class_index) > 0:
+                    max_loss_conflict = sample_loss_ema_d.get_max_loss(c)
+                    max_loss_align = sample_loss_ema_b.get_max_loss(c)
+                    normalized_loss_dis_conflict[class_index] = loss_dis_conflict[class_index] / (
+                                max_loss_conflict + 1e-8)
+                    normalized_loss_dis_align[class_index] = loss_dis_align[class_index] / (max_loss_align + 1e-8)
+
+            # 第3步: 根据两种不同损失的比例计算损失的权重
+            loss_weight = normalized_loss_dis_align / (
+                        normalized_loss_dis_align + normalized_loss_dis_conflict + 1e-8)
+            
+            # change end
+
             loss_dis_conflict = self.criterion(pred_conflict, label) * loss_weight.to(self.device)              # Eq.2 W(z)CE(C_i(z),y)
             loss_dis_align = self.bias_criterion(pred_align, label, model_b.state_dict(), model_l.state_dict(), z_conflict, self.cache.state_dict())                                             # Eq.2 GCE(C_b(z),y)
 
