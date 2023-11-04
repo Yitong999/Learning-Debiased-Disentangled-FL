@@ -13,7 +13,7 @@ class GeneralizedCELoss(nn.Module):
         super(GeneralizedCELoss, self).__init__()
         self.q = q
              
-    def forward(self, logits, targets, w_b, w_l, z):
+    def forward(self, logits, targets, w_b, w_l, z, w_i):
         p = F.softmax(logits, dim=1)
         if np.isnan(p.mean().item()):
             print('logits: ', logits)
@@ -21,6 +21,7 @@ class GeneralizedCELoss(nn.Module):
             print('w_b: ', w_b)
             print('w_l: ', w_l)
             print('z: ', z)
+            print('w_i', w_i)
             raise NameError('GCE_p')
         
         Yg = torch.gather(p, 1, torch.unsqueeze(targets, 1))
