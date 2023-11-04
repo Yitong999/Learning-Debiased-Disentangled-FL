@@ -15,6 +15,7 @@ if __name__ == '__main__':
 
     # training
     parser.add_argument("--batch_size", help="batch_size", default=256, type=int)
+    parser.add_argument("--test_batch_size", help="test_batch_size", default=1000, type=int)
     parser.add_argument("--lr",help='learning rate',default=1e-2, type=float)
     parser.add_argument("--weight_decay",help='weight_decay',default=0.0, type=float)
     parser.add_argument("--momentum",help='momentum',default=0.9, type=float)

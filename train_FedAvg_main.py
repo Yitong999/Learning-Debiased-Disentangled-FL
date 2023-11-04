@@ -18,6 +18,7 @@ from module.fedAvg import FedAvg
 import copy
 from module.util import get_model
 from data.util import get_dataset
+import math
 
 class fed_avg_main(object):
     def __init__(self, args):
@@ -52,8 +53,8 @@ class fed_avg_main(object):
 
         self.test_loader = DataLoader(
             self.test_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
+            batch_size=self.test_batch_size,
+            shuffle=False,
             num_workers=args.num_workers,
             pin_memory=True,
         )
@@ -142,7 +143,19 @@ class fed_avg_main(object):
             self.writer.add_scalar('test_auc_global', auc, iter)
             print(f'auc = {auc} in iter {iter}')
             print()
-            
+
+            # evalute the model's disparate impact
+            if self.args.train_ours and iter % 500 == 0:
+                #disparate impact
+                disparate_impact_arr = []
+                for i in range(10): #ten labels
+                    disparate_impact = self.disparate_impact_helper(i, model_b_global, model_l_global, self.test_loader)
+                    
+                    if not np.isnan(disparate_impact):
+                        disparate_impact_arr.append(disparate_impact)
+
+                self.writer.add_scalar('disparate_impact_mean/', np.mean(np.array(disparate_impact_arr)), iter)  
+                print('disparate_impact_mean/', np.mean(np.array(disparate_impact_arr)), f' on {iter} iterations')
 
     def evaluate(self, model, data_loader):
         model.eval()
@@ -207,4 +220,57 @@ class fed_avg_main(object):
 
         return accs
 
+
+    # disparate impact
+    # fairness metrics
+    def disparate_impact_helper(self, digit, model_b, model_l, data_loader):
+    #
+    # disparate impact = ((num_correct_digit1(color=red))/  (num_digit1(color=red)))/((num_correct_digit1(color!=red))/  (num_digit1(color!=red)))
+        model_b.eval()
+        model_l.eval()
+
+        result = []
+        for index, data, attr in tqdm(data_loader, leave=False):
+            data = data.to(self.args.device)
+            attr = attr.to(self.args.device)
+
+
+            with torch.no_grad():
+                if self.args.dataset == 'cmnist':
+                    z_l = model_l.extract(data)
+                    z_b = model_b.extract(data)
+                else:
+                    z_l, z_b = [], []
+                    hook_fn = model_l.avgpool.register_forward_hook(self.concat_dummy(z_l))
+                    _ = self.model_l(data)
+                    hook_fn.remove()
+                    z_l = z_l[0]
+                    hook_fn = self.model_b.avgpool.register_forward_hook(self.concat_dummy(z_b))
+                    _ = self.model_b(data)
+                    hook_fn.remove()
+                    z_b = z_b[0]
+                z_origin = torch.cat((z_l, z_b), dim=1)
+                
+                pred = model_l.fc(z_origin)
+
+                unpriviledge_count = torch.sum((attr[:, 0] == digit) & (attr[:, 1] == digit)) # 1,1
+                priviledge_count = torch.sum((attr[:, 0] == digit) & (attr[:, 1] != digit))   # 1,2
+                
+                unpriviledge_correct_count = torch.sum((pred == digit) & (attr[:, 0] == digit) & (attr[:, 1] == digit))
+                priviledge_correct_count = torch.sum((pred == digit) & (attr[:, 0] == digit) & (attr[:, 1] != digit))
+
+                disparate_impact = ((unpriviledge_correct_count / unpriviledge_count) / (priviledge_correct_count / priviledge_count)).item()
+
+                if not (math.isnan(disparate_impact) or math.isinf(disparate_impact)):
+                    result.append(disparate_impact)
+
+ 
+        disparate_impact = np.mean(np.array(result))
+
+        model_b.train()
+        model_l.train()
+
+        # print('disparate_impact on ' + str(digit) +': ', disparate_impact)
+
+        return disparate_impact
 
