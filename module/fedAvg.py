@@ -16,7 +16,7 @@ def FedAvg(w):
             w_avg[key] += w[i][key]
         w_avg[key] = torch.div(w_avg[key], len(w))
 
-        if np.isnan(w_avg[key].item()): 
+        if np.isnan(w_avg[key].cpu().numpy()): 
             print('w in fedavg: ', w, '   ******')
     return w_avg
 
