@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     # training
     parser.add_argument("--batch_size", help="batch_size", default=256, type=int)
-    parser.add_argument("--lr",help='learning rate',default=1e-3, type=float)
+    parser.add_argument("--lr",help='learning rate',default=1e-2, type=float)
     parser.add_argument("--weight_decay",help='weight_decay',default=0.0, type=float)
     parser.add_argument("--momentum",help='momentum',default=0.9, type=float)
     parser.add_argument("--num_workers", help="workers number", default=16, type=int)
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument("--lambda_swap_align",  help="lambda_swap_b in Eq.3", type=float, default=1.0)
     parser.add_argument("--lambda_swap",  help="lambda swap (lambda_swap in Eq.4)", type=float, default=1.0)
     parser.add_argument("--ema_alpha",  help="use weight mul", type=float, default=0.7)
-    parser.add_argument("--curr_step", help="curriculum steps", type=int, default= 0)
+    parser.add_argument("--curr_step", help="curriculum steps", type=int, default= 1000)
     parser.add_argument("--use_type0", action='store_true', help="whether to use type 0 CIFAR10C")
     parser.add_argument("--use_type1", action='store_true', help="whether to use type 1 CIFAR10C")
     parser.add_argument("--use_resnet20", help="Use Resnet20", action="store_true") # ResNet 20 was used in Learning From Failure CifarC10 (We used ResNet18 in our paper)
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     # add on for Federative Learning
     parser.add_argument("--FedAvg", action="store_true", help="whether to use FedAvg")
     parser.add_argument("--FedWt", action="store_true", help="Whether to use FedWt")
-    parser.add_argument("--local_num_steps", help="number of local steps for each communication", default=5-1, type=int)
-    # parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct', '0.5pct', '0.5pct', '1pct', '1pct', '1pct', '1pct', '2pct', '5pct'])
-    parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct'])
+    parser.add_argument("--local_num_steps", help="number of local steps for each communication", default=10, type=int)
+    parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct', '0.5pct', '0.5pct', '1pct', '1pct', '2pct', '2pct', '5pct', '5pct'])
+    # parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct'])
     args = parser.parse_args()
 
     
