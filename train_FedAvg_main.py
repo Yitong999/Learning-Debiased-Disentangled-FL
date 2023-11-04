@@ -39,6 +39,7 @@ class fed_avg_main(object):
         
         self.device = torch.device(args.device)
         self.batch_size = data2batch_size[args.dataset]
+        self.test_batch_size = 1000
 
         self.test_dataset = get_dataset(
             args.dataset,
