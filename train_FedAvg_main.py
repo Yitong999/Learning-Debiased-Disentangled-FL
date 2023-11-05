@@ -231,7 +231,7 @@ class fed_avg_main(object):
         model_l.eval()
 
         result = []
-        for index, data, attr in tqdm(data_loader, leave=False):
+        for data, attr, index in tqdm(data_loader, leave=False):
             data = data.to(self.device)
             attr = attr.to(self.device)
 
