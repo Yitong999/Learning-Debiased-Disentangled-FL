@@ -232,8 +232,8 @@ class fed_avg_main(object):
 
         result = []
         for index, data, attr in tqdm(data_loader, leave=False):
-            data = data.to(self.args.device)
-            attr = attr.to(self.args.device)
+            data = data.to(self.device)
+            attr = attr.to(self.device)
 
 
             with torch.no_grad():
