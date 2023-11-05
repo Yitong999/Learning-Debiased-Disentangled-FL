@@ -32,7 +32,10 @@ def FedWt_v1(w, scores):
     print('scores in FedAVG: ', scores)
 
 
-    w_avg = scores[0] * copy.deepcopy(w[0])
+    w_avg = copy.deepcopy(w[0])
+    for key in w_avg:
+        w_avg[key] = w_avg[key] * scores[0]
+
     for key in w_avg.keys():
         w_avg[key] = w_avg[key] * scores[0]
         for i in range(1, len(w)):
@@ -52,7 +55,10 @@ def FedWt_v2(w, scores):
     scores = [exp_value / sum_of_exp_values for exp_value in exp_values]
     print('scores in FedAVG: ', scores)
 
-    w_avg = scores[0] * copy.deepcopy(w[0])
+    w_avg = copy.deepcopy(w[0])
+    for key in w_avg:
+        w_avg[key] = w_avg[key] * scores[0]
+        
     for key in w_avg.keys():
         w_avg[key] = w_avg[key] * scores[0]
         for i in range(1, len(w)):
