@@ -476,7 +476,7 @@ class LocalUpdate(object):
 
             self.optimizer_b = torch.optim.Adam(
                 model_b.parameters(),
-                lr=args.lr * args.lr_gamma ** (self.iter // args.lr_decay_step),
+                lr=args.lr * args.lr_gamma ** (iter // args.lr_decay_step),
                 weight_decay=args.weight_decay,
             )
         else: # don't use lr_decay
@@ -649,9 +649,6 @@ class LocalUpdate(object):
             self.optimizer_l.step()
             self.optimizer_b.step()
 
-            if step >= args.curr_step and args.use_lr_decay:
-                self.scheduler_b.step()
-                self.scheduler_l.step()
 
             if args.use_lr_decay and step % args.lr_decay_step == 0:
                 print('******* learning rate decay .... ********')
