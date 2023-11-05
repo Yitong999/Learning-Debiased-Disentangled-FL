@@ -56,7 +56,8 @@ if __name__ == '__main__':
 
     # add on for Federative Learning
     parser.add_argument("--FedAvg", action="store_true", help="whether to use FedAvg")
-    parser.add_argument("--FedWt", action="store_true", help="Whether to use FedWt")
+    parser.add_argument("--FedWt_v1", action="store_true", help="Whether to use FedWt")
+    parser.add_argument("--FedWt_v2", action="store_true", help="Whether to use FedWt")
     parser.add_argument("--local_num_steps", help="number of local steps for each communication", default=10, type=int)
     # parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct', '0.5pct', '0.5pct', '1pct', '1pct', '2pct', '2pct', '5pct', '5pct'])
     parser.add_argument("--clients_ratio_list", help="bias confliction sample ratio in training", default=['0.5pct', '0.5pct'])
@@ -69,7 +70,7 @@ if __name__ == '__main__':
     print('Training starts ...')
 
     # FedAvg over clients
-    if args.FedAvg:
+    if args.FedAvg or args.FedWt_v1 or args.FedWt_v2:
         fedavg = fed_avg_main(args)
         fedavg.train()
 

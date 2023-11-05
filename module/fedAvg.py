@@ -21,27 +21,43 @@ def FedAvg(w):
             print('w in fedavg: ', w, '   ******')
     return w_avg
 
-def FedFairAvg(w, scores):
+def FedWt_v1(w, scores):
     """
     Returns the weighted avg of the weights.
     """
     
-    # method 1: reweight based on scores
-    sum = 0
-    for each in scores:
-        sum += each
-    scores /= sum
-
-    #method 2: reweight based on softmax of scores
-    # scores = F.softmax(torch.FloatTensor(scores))
+    # reweight based on scores
+    total = sum(scores)
+    scores = [x / total for x in scores]
+    print('scores in FedAVG: ', scores)
 
 
     w_avg = scores[0] * copy.deepcopy(w[0])
     for key in w_avg.keys():
+        w_avg[key] = w_avg[key] * scores[0]
         for i in range(1, len(w)):
             w_avg[key] += scores[i] * w[i][key]
         
     return w_avg
 
+
+def FedWt_v2(w, scores):
+    """
+    Returns the weighted avg of the weights.
+    """
+    
+    # reweight based on scores
+    exp_values = [math.exp(n) for n in scores]
+    sum_of_exp_values = sum(exp_values)
+    scores = [exp_value / sum_of_exp_values for exp_value in exp_values]
+    print('scores in FedAVG: ', scores)
+
+    w_avg = scores[0] * copy.deepcopy(w[0])
+    for key in w_avg.keys():
+        w_avg[key] = w_avg[key] * scores[0]
+        for i in range(1, len(w)):
+            w_avg[key] += scores[i] * w[i][key]
+        
+    return w_avg
 
 

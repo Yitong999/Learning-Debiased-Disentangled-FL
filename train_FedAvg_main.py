@@ -14,7 +14,7 @@ from module.util import get_model
 from util import EMA
 
 from Update import LocalUpdate
-from module.fedAvg import FedAvg
+from module.fedAvg import FedAvg, FedWt_v1, FedWt_v2
 import copy
 from module.util import get_model
 from data.util import get_dataset
@@ -92,7 +92,7 @@ class fed_avg_main(object):
         for iter in range(self.args.num_steps):
             if self.args.train_ours:
                 w_l_locals = []
-            w_b_locals = []
+            w_b_locals, scores = [], []
 
             for idx in range(len(self.args.clients_ratio_list)):
                 try:
@@ -106,9 +106,10 @@ class fed_avg_main(object):
                 local = LocalUpdate(self.args, idx, iter, self.writer, model_b_global, copy.deepcopy(model_l_global))
 
                 if self.args.train_ours:
-                    w_l, w_b = local.train_ours(self.args)
+                    w_l, w_b, score = local.train_ours(self.args)
 
                     w_l_locals.append(copy.deepcopy(w_l))
+                    scores.append(score)
                     # TODO: avoid FedAvg global model
                     
                 elif self.args.train_vanilla:
@@ -125,7 +126,12 @@ class fed_avg_main(object):
 
             # TODO: implement vanilla
             if self.args.train_ours:
-                w_l_global = FedAvg(w_l_locals)
+                if self.args.FedAvg:
+                    w_l_global = FedAvg(w_l_locals)
+                elif self.args.FedWt_v1:
+                    w_l_global = FedWt_v1(w_l_locals, scores)
+                elif self.args.FedWt_v2:
+                    w_l_global = FedWt_v2(w_l_locals, scores)
 
 
             print(f'finishing aggregation on epoch {iter}')

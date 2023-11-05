@@ -501,6 +501,7 @@ class LocalUpdate(object):
 
         train_iter = iter(self.train_loader)
 
+        score = 0 # score for weight
         for step in tqdm(range(args.local_num_steps)):
 
             try:
@@ -608,6 +609,7 @@ class LocalUpdate(object):
             loss_weight = normalized_loss_dis_align / (
                         normalized_loss_dis_align + normalized_loss_dis_conflict + 1e-8)
             
+            score += loss_weight.mean().item() # assign value as score metrics
             # change end
 
             loss_dis_conflict = self.criterion(pred_conflict, label) * loss_weight.to(self.device)              # Eq.2 W(z)CE(C_i(z),y)
@@ -677,7 +679,7 @@ class LocalUpdate(object):
                 epoch += 1
                 cnt = 0
 
-        return model_l.state_dict(), model_b.state_dict()
+        return model_l.state_dict(), model_b.state_dict(), score
 
     def test_ours(self, args):
         if args.dataset == 'cmnist':
