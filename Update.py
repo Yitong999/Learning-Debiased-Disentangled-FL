@@ -468,15 +468,16 @@ class LocalUpdate(object):
         model_b = self.model_b
 
         if args.use_lr_decay:
+            learning_rate = args.lr * args.lr_gamma ** (self.iter // args.lr_decay_step)
             self.optimizer_l = torch.optim.Adam(
                 model_l.parameters(),
-                lr=args.lr * args.lr_gamma ** (self.iter // args.lr_decay_step),
+                lr=learning_rate,
                 weight_decay=args.weight_decay,
             )
 
             self.optimizer_b = torch.optim.Adam(
                 model_b.parameters(),
-                lr=args.lr * args.lr_gamma ** (iter // args.lr_decay_step),
+                lr=learning_rate,
                 weight_decay=args.weight_decay,
             )
         else: # don't use lr_decay
