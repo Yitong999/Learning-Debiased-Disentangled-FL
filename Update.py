@@ -585,6 +585,10 @@ class LocalUpdate(object):
 
             loss_weight = loss_dis_align / (loss_dis_align + loss_dis_conflict + 1e-8)                          # Eq.1 (reweighting module) in the main paper
             """
+
+            '''No EMA
+            
+            
             # 第1步: 更新每个类别的EMA和最大损失
             for c in range(self.num_classes):
                 class_index = torch.where(label == c)[0]
@@ -608,6 +612,8 @@ class LocalUpdate(object):
             # 第3步: 根据两种不同损失的比例计算损失的权重
             loss_weight = normalized_loss_dis_align / (
                         normalized_loss_dis_align + normalized_loss_dis_conflict + 1e-8)
+            '''
+            loss_weight = loss_dis_align / (loss_dis_align + loss_dis_conflict + 1e-8)   
             
             score += loss_weight.mean().item() # assign value as score metrics
             # change end
