@@ -253,7 +253,8 @@ class fed_avg_main(object):
                 z_origin = torch.cat((z_l, z_b), dim=1)
                 
                 pred = model_l.fc(z_origin)
-
+                pred = pred.data.max(1, keepdim=True)[1].squeeze(1)
+                print('pred shape: ', pred.shape)
                 unpriviledge_count = torch.sum((attr[:, 0] == digit) & (attr[:, 1] == digit)) # 1,1
                 priviledge_count = torch.sum((attr[:, 0] == digit) & (attr[:, 1] != digit))   # 1,2
                 
