@@ -611,7 +611,7 @@ class LocalUpdate(object):
             # change end
 
             loss_dis_conflict = self.criterion(pred_conflict, label) * loss_weight.to(self.device)              # Eq.2 W(z)CE(C_i(z),y)
-            loss_dis_align = self.bias_criterion(pred_align, label, model_b.state_dict(), model_l.state_dict(), z_conflict, self.cache.state_dict())                                             # Eq.2 GCE(C_b(z),y)
+            loss_dis_align = self.bias_criterion(pred_align, label)                                             # Eq.2 GCE(C_b(z),y)
 
             # feature-level augmentation : augmentation after certain iteration (after representation is disentangled at a certain level)
             # TODO: set step based on global epochs
@@ -651,7 +651,7 @@ class LocalUpdate(object):
             self.optimizer_b.step()
 
 
-            if args.use_lr_decay and step % args.lr_decay_step == 0:
+            if args.use_lr_decay and step == 0:
                 print('******* learning rate decay .... ********')
                 print(f"self.optimizer_b lr: { self.optimizer_b.param_groups[-1]['lr']}")
                 print(f"self.optimizer_l lr: { self.optimizer_l.param_groups[-1]['lr']}")
