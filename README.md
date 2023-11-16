@@ -1,4 +1,4 @@
-##  Learning Debiased Representation via Disentangled Feature Augmentation (Neurips 2021, Oral): Official Project Webpage
+##  Learning Debiased Representation via Disentangled Feature Augmentation (Neurips 2021, Oral): Official Project Webpage In FL Setting
 This repository provides the official PyTorch implementation of the following paper:
 > Learning Debiased Representation via Disentangled Feature Augmentation <br>
 > [Jungsoo Lee](https://leebebeto.github.io/)* (KAIST AI, Kakao Enterprise), [Eungyeup Kim](https://eungyeupkim.github.io/)* (KAIST AI, Kakao Enterprise),<br>
@@ -137,6 +137,23 @@ bash scripts/run_bffhq_ours.sh
 In order to test our pretrained models, run the following command.
 ```
 python test.py --pretrained_path=<path_to_pretrained_ckpt> --dataset=<dataset_to_test> --percent=<percent_to_test>
+```
+
+### Trained Models in Federated Learning Setting in FedAvg
+```
+python train.py --dataset cmnist --exp=cmnist_fl_ours --lr=0.005 --percent=0.5pct --curr_step=1000 --lambda_swap=1 --lambda_dis_align=1 --lambda_swap_align=1 --use_lr_decay --lr_decay_step=1000 --lr_gamma=0.5 --train_ours --tensorboard --FedWt_v1
+```
+
+
+### Trained Models in Federated Learning Setting in FedAw_v1
+```
+python train.py --dataset cmnist --exp=cmnist_fl_ours --lr=0.005 --percent=0.5pct --curr_step=1000 --lambda_swap=1 --lambda_dis_align=1 --lambda_swap_align=1 --use_lr_decay --lr_decay_step=1000 --lr_gamma=0.5 --train_ours --tensorboard --FedWt_v1
+```
+
+
+### Trained Models in Federated Learning Setting in FedAw_v2
+```
+python train.py --dataset cmnist --exp=cmnist_fl_ours --lr=0.005 --percent=0.5pct --curr_step=1000 --lambda_swap=1 --lambda_dis_align=1 --lambda_swap_align=1 --use_lr_decay --lr_decay_step=1000 --lr_gamma=0.5 --train_ours --tensorboard --FedWt_v2
 ```
 
 We provide the pretrained models in the following urls. <br>

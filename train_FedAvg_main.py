@@ -151,7 +151,7 @@ class fed_avg_main(object):
             print()
 
             # evalute the model's disparate impact
-            if self.args.train_ours and iter % 500 == 0:
+            if self.args.train_ours and iter % 5 == 0:
                 #disparate impact
                 disparate_impact_arr = []
                 for i in range(10): #ten labels
